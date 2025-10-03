@@ -154,6 +154,14 @@ namespace aoci_lab3
             double scaleX = ScaleInverseXSlider.Value;
             double scaleY = ScaleInverseYSlider.Value;
 
+            double angleDegrees = RotationSlider.Value;
+
+            double angleRadians = angleDegrees * Math.PI / 180.0;
+            double cos = Math.Cos(angleRadians);
+            double sin = Math.Sin(angleRadians);
+            float centerX = sourceImage.Width / 2.0f;
+            float centerY = sourceImage.Height / 2.0f;
+
             int newWidth = (int)(sourceImage.Width * scaleX);
             int newHeight = (int)(sourceImage.Height * scaleY);
 
@@ -163,9 +171,18 @@ namespace aoci_lab3
             {
                 for (int x_out = 0; x_out < newWidth; x_out++)
                 {
-                    double x_in = x_out / scaleX;
-                    double y_in = y_out / scaleY;
+                    double x_centered = x_out - newWidth / 2.0;
+                    double y_centered = y_out - newHeight / 2.0;
 
+                    double x_rotated = x_centered * cos + y_centered * sin;
+                    double y_rotated = -x_centered * sin + y_centered * cos;
+
+                    double x_scaled = x_rotated / scaleX;
+                    double y_scaled = y_rotated / scaleY;
+
+                    double x_in = x_scaled + centerX;
+                    double y_in = y_scaled + centerY;
+                        
                     if (x_in >= 0 && y_in >= 0 && x_in < sourceImage.Width && y_in < sourceImage.Height)
                     {
                         scaledImage[y_out, x_out] = sourceImage[(int)Math.Truncate(y_in), (int)Math.Truncate(x_in)];
