@@ -5,12 +5,13 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:aoci_lab3"
         mc:Ignorable="d"
-        Title="Лабораторная работа #3" Height="650" Width="820">
+        Title="Лабораторная работа #3" Height="650" Width="1020">
     <Grid>
         
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="220"/>
             <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="200"/>
         </Grid.ColumnDefinitions>
 
         <Border Grid.Column="0" BorderBrush="DimGray" BorderThickness="1" Margin="5">
@@ -66,6 +67,18 @@
 
         <Border Grid.Column="1" BorderBrush="DimGray" BorderThickness="1" Margin="5">
             <Image Name="MainImage"  Margin="5" Stretch="Uniform"/>
+        </Border>
+
+        <Border Grid.Column="2" BorderBrush="DimGray" BorderThickness="1" Margin="5">
+            <StackPanel Margin="5">
+                <Label Content="Эффект волны" HorizontalContentAlignment="Center" FontWeight="Bold"/>
+
+                <Label Content="Амплитуда"/>
+                <Slider Minimum="0" Maximum="50" Value="0" Name="WaveAmplitude" ValueChanged="OnWaveFilterChanged"/>
+
+                <Label Content="Частота"/>
+                <Slider Minimum="0" Maximum="0.2" Value="0" Name="WaveFrequency" ValueChanged="OnWaveFilterChanged"/>
+            </StackPanel>
         </Border>
 
     </Grid>

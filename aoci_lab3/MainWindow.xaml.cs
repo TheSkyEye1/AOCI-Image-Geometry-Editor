@@ -251,9 +251,23 @@ namespace aoci_lab3
             MainImage.Source = ToBitmapSource(scaledImage);
         }
 
-        private void MainImage_MouseLeftButtonDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        private void OnWaveFilterChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
+            if (sourceImage == null) return;
 
+            Image<Bgr, byte> wavyImage = sourceImage.Clone();
+
+            double waveAmplitude = WaveAmplitude.Value;
+            double waveFrequency = WaveFrequency.Value;
+
+            for (int y_out = 0; y_out < wavyImage.Height; y_out++)
+            {
+                for (int x_out = 0; x_out < wavyImage.Width; x_out++)
+                {
+                    double x_in = x_out / scaleX;
+                    double y_in
+                }
+            }
         }
     }
 }
