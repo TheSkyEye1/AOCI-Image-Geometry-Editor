@@ -147,7 +147,38 @@ namespace aoci_lab3
 
             MainImage.Source = ToBitmapSource(scaledImage);
         }
-        private void OnInversedGeometryFilterChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+        private Bgr BilinearInterpolate(Image<Bgr, byte> image, float x, float y)
+        {
+            int x1 = (int)x;
+            int y1 = (int)y;
+            int x2 = x1 + 1;
+            int y2 = y1 + 1;
+
+            Bgr p11 = image[y1, x1];
+            Bgr p12 = image[y2, x1];
+            Bgr p21 = image[y1, x2];
+            Bgr p22 = image[y2, x2];
+
+            
+            float fx = x - x1;
+            float fy = y - y1;
+
+            double r_top = p11.Red * (1 - fx) + p21.Red * fx;
+            double g_top = p11.Green * (1 - fx) + p21.Green * fx;
+            double b_top = p11.Blue * (1 - fx) + p21.Blue * fx;
+
+            double r_bottom = p12.Red * (1 - fx) + p22.Red * fx;
+            double g_bottom = p12.Green * (1 - fx) + p22.Green * fx;
+            double b_bottom = p12.Blue * (1 - fx) + p22.Blue * fx;
+
+            double r = r_top * (1 - fy) + r_bottom * fy;
+            double g = g_top * (1 - fy) + g_bottom * fy;
+            double b = b_top * (1 - fy) + b_bottom * fy;
+
+            return new Bgr(b, g, r);
+        }
+
+        private void OnInversedGeometryFilterChanged(object sender, RoutedEventArgs e)
         {
             if (sourceImage == null) return;
 
@@ -163,6 +194,8 @@ namespace aoci_lab3
             float centerY = sourceImage.Height / 2.0f;
 
             double shear = ShearSlider.Value;
+
+            bool useInterpolation = InterpolationCheckbox.IsChecked.Value;
 
             int newWidth = (int)(sourceImage.Width * scaleX);
             int newHeight = (int)(sourceImage.Height * scaleY);
@@ -188,15 +221,25 @@ namespace aoci_lab3
                     double x_in = x_scaled + centerX;
                     double y_in = y_scaled + centerY;
 
-                    if (x_in >= 0 && y_in >= 0 && x_in < sourceImage.Width && y_in < sourceImage.Height)
+                    if (x_in >= 0 && y_in >= 0 && x_in < sourceImage.Width - 1 && y_in < sourceImage.Height - 1)
                     {
-                        scaledImage[y_out, x_out] = sourceImage[(int)Math.Truncate(y_in), (int)Math.Truncate(x_in)];
+                        Bgr color;
+
+                        if (useInterpolation)
+                        {
+                            color = BilinearInterpolate(sourceImage, (float)x_in, (float)y_in);
+                        }
+                        else
+                        {
+                            color = sourceImage[(int)Math.Truncate(y_in), (int)Math.Truncate(x_in)];
+                        }
+
+                        scaledImage[y_out, x_out] = color;
                     }
                 }
             }
 
             MainImage.Source = ToBitmapSource(scaledImage);
-
         }
     }
 }
