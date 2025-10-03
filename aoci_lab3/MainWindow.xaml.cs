@@ -6,6 +6,7 @@ using Microsoft.Win32;
 using Emgu.CV.Structure;
 using Emgu.CV;
 using static Emgu.Util.Platform;
+using System.Drawing;
 
 namespace aoci_lab3
 {
@@ -264,10 +265,73 @@ namespace aoci_lab3
             {
                 for (int x_out = 0; x_out < wavyImage.Width; x_out++)
                 {
-                    double x_in = x_out / scaleX;
-                    double y_in
+                    double x_in = x_out;
+                    double y_in = y_out;
+
+                    double offsetX = waveAmplitude * Math.Sin(y_in * waveFrequency);
+
+                    x_in += offsetX;
+
+                    if (x_in >= 0 && y_in >= 0 && x_in < sourceImage.Width - 1 && y_in < sourceImage.Height - 1)
+                    {
+                        wavyImage[y_out, x_out] = sourceImage[(int)Math.Truncate(y_in), (int)Math.Truncate(x_in)];
+                    }
                 }
             }
+
+            MainImage.Source = ToBitmapSource(wavyImage);
+        }
+
+        private void OnTwirlFilterChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+        {
+            if (sourceImage == null) return;
+
+            Image<Bgr, byte> twirlImage = sourceImage.Clone();
+
+            double twirlStrength = TwirlStrength.Value;
+
+            if (Math.Abs(twirlStrength) > 0.01)
+            {
+                for (int y_out = 0; y_out < twirlImage.Height; y_out++)
+                {
+                    for (int x_out = 0; x_out < twirlImage.Width; x_out++)
+                    {
+                        double x_in = x_out;
+                        double y_in = y_out;
+
+                        float centerX = sourceImage.Width / 2.0f;
+                        float centerY = sourceImage.Height / 2.0f;
+
+                        double dx = x_out - centerX;
+                        double dy = y_out - centerY;
+                        double distance = Math.Sqrt(dx * dx + dy * dy);
+                        double angle = Math.Atan2(dy, dx);
+
+                        double twirlRadius = Math.Min(centerX, centerY);
+
+                        if (distance < twirlRadius)
+                        {
+                            double factor = 1.0 - (distance / twirlRadius);
+                            angle += twirlStrength * factor;
+
+                            x_in = centerX + distance * Math.Cos(angle);
+                            y_in = centerY + distance * Math.Sin(angle);
+                        }
+                        else
+                        {
+                            x_in = x_out;
+                            y_in = y_out;
+                        }
+
+                        if (x_in >= 0 && y_in >= 0 && x_in < sourceImage.Width - 1 && y_in < sourceImage.Height - 1)
+                        {
+                            twirlImage[y_out, x_out] = sourceImage[(int)Math.Truncate(y_in), (int)Math.Truncate(x_in)];
+                        }
+                    }
+                }
+            }
+
+            MainImage.Source = ToBitmapSource(twirlImage);
         }
     }
 }

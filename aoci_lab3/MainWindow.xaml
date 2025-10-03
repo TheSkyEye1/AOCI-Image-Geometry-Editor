@@ -71,13 +71,30 @@
 
         <Border Grid.Column="2" BorderBrush="DimGray" BorderThickness="1" Margin="5">
             <StackPanel Margin="5">
-                <Label Content="Эффект волны" HorizontalContentAlignment="Center" FontWeight="Bold"/>
+                <Border Grid.Column="1" BorderBrush="DimGray" BorderThickness="1" Margin="5">
+                    <StackPanel Margin="5">
+                        
+                        <Label Content="Эффект волны" HorizontalContentAlignment="Center" FontWeight="Bold"/>
 
-                <Label Content="Амплитуда"/>
-                <Slider Minimum="0" Maximum="50" Value="0" Name="WaveAmplitude" ValueChanged="OnWaveFilterChanged"/>
+                        <Label Content="Амплитуда"/>
+                        <Slider Minimum="0" Maximum="50" Value="0" Name="WaveAmplitude" ValueChanged="OnWaveFilterChanged"/>
 
-                <Label Content="Частота"/>
-                <Slider Minimum="0" Maximum="0.2" Value="0" Name="WaveFrequency" ValueChanged="OnWaveFilterChanged"/>
+                        <Label Content="Частота"/>
+                        <Slider Minimum="0" Maximum="0.2" Value="0" Name="WaveFrequency" ValueChanged="OnWaveFilterChanged" Margin="0,0,0,20"/>
+
+                    </StackPanel>
+                </Border>
+                
+                <Border Grid.Column="1" BorderBrush="DimGray" BorderThickness="1" Margin="5">
+                    <StackPanel Margin="5">
+                        
+                        <Label Content="Эффект воронки" VerticalContentAlignment="Center" FontWeight="Bold"/>
+                        <Label Content="Сила"/>
+                        <Slider Minimum="-10.0" Maximum="10.0" Value="0.0" Name="TwirlStrength" ValueChanged="OnTwirlFilterChanged" Margin="0,0,0,20"/>
+                        
+                    </StackPanel>
+                </Border>
+                
             </StackPanel>
         </Border>
 
