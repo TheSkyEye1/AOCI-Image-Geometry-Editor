@@ -1,18 +1,11 @@
-﻿using Microsoft.Win32;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System;
 using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
+using Microsoft.Win32;
+using Emgu.CV.Structure;
+using Emgu.CV;
+using static Emgu.Util.Platform;
 
 namespace aoci_lab3
 {
@@ -126,5 +119,32 @@ namespace aoci_lab3
             MainImage.Source = ToBitmapSource(sourceImage);
         }
 
+        private void OnGeometryFilterChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+        {
+            if (sourceImage == null) return;
+
+            double scaleX = ScaleXSlider.Value;
+            double scaleY = ScaleYSlider.Value;
+
+            int newWidth = (int)(sourceImage.Width * scaleX);
+            int newHeight = (int)(sourceImage.Height * scaleY);
+            Image<Bgr, byte> scaledImage = new Image<Bgr, byte>(newWidth, newHeight);
+
+            for (int y_in = 0; y_in < sourceImage.Height; y_in++)
+            {
+                for (int x_in = 0; x_in < sourceImage.Width; x_in++)
+                {
+                    int x_out = (int)(x_in * scaleX);
+                    int y_out = (int)(y_in * scaleY);
+
+                    if (x_out >= 0 && x_out < newWidth && y_out >= 0 && y_out < newHeight)
+                    {
+                        scaledImage[y_out, x_out] = sourceImage[y_in, x_in];
+                    }
+                }
+            }
+
+            MainImage.Source = ToBitmapSource(scaledImage);
+        }
     }
 }
