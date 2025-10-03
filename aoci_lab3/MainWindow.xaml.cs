@@ -15,6 +15,7 @@ namespace aoci_lab3
     /// </summary>
     public partial class MainWindow : Window
     {
+        // --- Код повторяется из лабораторной работы #1 ---
 
         private Image<Bgr, byte> sourceImage;
 
@@ -114,12 +115,18 @@ namespace aoci_lab3
             sourceImage = ToEmguImage(currentWpfImage);
             MessageBox.Show("Изменения применены. Теперь это новый оригинал.");
         }
+
         private void Clear_Click(object sender, RoutedEventArgs e)
         {
             if (sourceImage == null) return;
             MainImage.Source = ToBitmapSource(sourceImage);
         }
 
+        // --- Фильтры и эффекты ---
+
+
+
+        // Алгоритм выполняет масштабирование изображения, используя прямое преобразование.
         private void OnGeometryFilterChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
             if (sourceImage == null) return;
@@ -127,20 +134,25 @@ namespace aoci_lab3
             double scaleX = ScaleXSlider.Value;
             double scaleY = ScaleYSlider.Value;
 
+            //Вычисляем новые размеры изображения.
             int newWidth = (int)(sourceImage.Width * scaleX);
             int newHeight = (int)(sourceImage.Height * scaleY);
 
             Image<Bgr, byte> scaledImage = new Image<Bgr, byte>(newWidth, newHeight);
 
+            //Проходим по ИСХОДНОМУ изображению.
             for (int y_in = 0; y_in < sourceImage.Height; y_in++)
             {
                 for (int x_in = 0; x_in < sourceImage.Width; x_in++)
                 {
+                    //Вычисляем новую позицию для текущего пикселя.
                     int x_out = (int)(x_in * scaleX);
                     int y_out = (int)(y_in * scaleY);
 
+                    //Проверяем, не вышли ли мы за границы нового изображения.
                     if (x_out >= 0 && x_out < newWidth && y_out >= 0 && y_out < newHeight)
                     {
+                        //Копируем пиксель из старого изображения в новое.
                         scaledImage[y_out, x_out] = sourceImage[y_in, x_in];
                     }
                 }
@@ -148,30 +160,43 @@ namespace aoci_lab3
 
             MainImage.Source = ToBitmapSource(scaledImage);
         }
+
+        //Функция вычисляет цвет для пикселя с дробными координатами с помощью билинейной интерполяции
+        //Алгоритм:
+        //1. Найти 4 пикселя, окружающие точку (x, y).
+        //2. Выполнить линейную интерполяцию по горизонтали для верхней и нижней пары пикселей.
+        //3. Выполнить линейную интерполяцию по вертикали между двумя результатами из предыдущего шага.
+        //Результат - цвет нашего нового пикселя
         private Bgr BilinearInterpolate(Image<Bgr, byte> image, float x, float y)
         {
+            //Находим координаты 4-х опорных пикселей (квадрат, в который попала точка).
             int x1 = (int)x;
             int y1 = (int)y;
             int x2 = x1 + 1;
             int y2 = y1 + 1;
 
-            Bgr p11 = image[y1, x1];
-            Bgr p12 = image[y2, x1];
-            Bgr p21 = image[y1, x2];
-            Bgr p22 = image[y2, x2];
+            //Получаем цвета этих пикселей.
+            Bgr p11 = image[y1, x1];  //Верхний левый
+            Bgr p12 = image[y2, x1];  //Нижний левый
+            Bgr p21 = image[y1, x2];  //Верхний правый
+            Bgr p22 = image[y2, x2];  //Нижний правый
 
-            
+            //Вычисляем дробные части — "расстояние" от левой (fx) и верхней (fy) границы.
             float fx = x - x1;
             float fy = y - y1;
 
+            //Линейно интерполируем по горизонтали.
+            //Смешиваем цвета верхней пары пикселей (p11 и p21).
             double r_top = p11.Red * (1 - fx) + p21.Red * fx;
             double g_top = p11.Green * (1 - fx) + p21.Green * fx;
             double b_top = p11.Blue * (1 - fx) + p21.Blue * fx;
 
+            //Смешиваем цвета нижней пары пикселей (p12 и p22).
             double r_bottom = p12.Red * (1 - fx) + p22.Red * fx;
             double g_bottom = p12.Green * (1 - fx) + p22.Green * fx;
             double b_bottom = p12.Blue * (1 - fx) + p22.Blue * fx;
 
+            //Линейно интерполируем по вертикали между двумя полученными "средними" цветами.
             double r = r_top * (1 - fy) + r_bottom * fy;
             double g = g_top * (1 - fy) + g_bottom * fy;
             double b = b_top * (1 - fy) + b_bottom * fy;
@@ -179,68 +204,83 @@ namespace aoci_lab3
             return new Bgr(b, g, r);
         }
 
+        //Выполняет масштабирование, вращение и сдвиг, используя обратное преобразование.
+        //Это правильный подход для геометрических трансформаций.
+
+        //Алгоритм проходит по каждому пикселю ВЫХОДНОГО изображения и для каждого из них вычисляет, из какой точки ИСХОДНОГО изображения нужно взять цвет.
+        //Это решает все проблемы прямого подхода: дыр не возникает, т.к. каждый пиксель гарантированно будет заполнен.
         private void OnInversedGeometryFilterChanged(object sender, RoutedEventArgs e)
         {
             if (sourceImage == null) return;
 
+            //Получаем параметры трансформации из UI
             double scaleX = ScaleInverseXSlider.Value;
             double scaleY = ScaleInverseYSlider.Value;
-
             double angleDegrees = RotationSlider.Value;
+            double shear = ShearSlider.Value; // Сдвиг (скос)
+            bool useInterpolation = InterpolationCheckbox.IsChecked.Value;
 
-            double angleRadians = angleDegrees * Math.PI / 180.0;
+            //Подготовительные вычисления
+            double angleRadians = angleDegrees * Math.PI / 180.0; //Для расчета поворота нужны радианы
             double cos = Math.Cos(angleRadians);
             double sin = Math.Sin(angleRadians);
 
-            float centerX, centerY = 0;
+            //Центр вращения (по умолчанию центр изображения).
+            float centerX = sourceImage.Width / 2.0f;
+            float centerY = sourceImage.Height / 2.0f;
+            float.TryParse(xCord.Text, out centerX); //Пытаемся прочитать из TextBox координаты центра поворота
+            float.TryParse(yCord.Text, out centerY);
 
-            if(float.TryParse(xCord.Text,out centerX) && float.TryParse(yCord.Text,out centerY))
-            {
-                if(centerX < 0 || centerY < 0)
-                {
-                    centerX = sourceImage.Width / 2.0f;
-                    centerY = sourceImage.Height / 2.0f;
-                }
-            }
 
-            double shear = ShearSlider.Value;
-
-            bool useInterpolation = InterpolationCheckbox.IsChecked.Value;
-
+            //Новые размеры изображения.
             int newWidth = (int)(sourceImage.Width * scaleX);
             int newHeight = (int)(sourceImage.Height * scaleY);
 
             Image<Bgr, byte> scaledImage = new Image<Bgr, byte>(newWidth, newHeight);
 
+            //Проходим по ВЫХОДНОМУ изображению.
             for (int y_out = 0; y_out < newHeight; y_out++)
             {
                 for (int x_out = 0; x_out < newWidth; x_out++)
                 {
+
+                    //Чтобы найти исходные значения пикселя (x_in, y_in) для выходного значения (x_out, y_out), мы применяем
+                    //все трансформации в обратном порядке и с обратными операциями.
+
+                    //Центрируем координаты относительно центра нового изображения.
+                    //Это нужно, чтобы вращение и масштабирование происходили вокруг центра.
                     double x_centered = x_out - newWidth / 2.0;
                     double y_centered = y_out - newHeight / 2.0;
 
+                    //Вращаем в обратную сторону.
                     double x_rotated = x_centered * cos + y_centered * sin;
                     double y_rotated = -x_centered * sin + y_centered * cos;
 
+                    //Обратный сдвиг.
                     double x_sheared = x_rotated - y_rotated * shear;
                     double y_sheared = y_rotated;
 
+                    //Обратное масштабирование (деление вместо умножения).
                     double x_scaled = x_sheared / scaleX;
                     double y_scaled = y_sheared / scaleY;
 
+                    //Возвращаем координаты в исходную систему (смещаем от центра источника).
                     double x_in = x_scaled + centerX;
                     double y_in = y_scaled + centerY;
 
+                    //Проверяем, что вычисленные координаты находятся в пределах исходного изображения.
                     if (x_in >= 0 && y_in >= 0 && x_in < sourceImage.Width - 1 && y_in < sourceImage.Height - 1)
                     {
                         Bgr color;
 
                         if (useInterpolation)
                         {
+                            //Используем билинейную интерполяцию для гладкости.
                             color = BilinearInterpolate(sourceImage, (float)x_in, (float)y_in);
                         }
                         else
-                        {
+                        { 
+                            // Простой вариант - берем цвет ближайшего пикселя.
                             color = sourceImage[(int)Math.Truncate(y_in), (int)Math.Truncate(x_in)];
                         }
 
@@ -252,10 +292,12 @@ namespace aoci_lab3
             MainImage.Source = ToBitmapSource(scaledImage);
         }
 
+        //Функция применяет к изображению эффект горизонтальных волн.
         private void OnWaveFilterChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
             if (sourceImage == null) return;
 
+            //Здесь мы не меняем размер, поэтому можно использовать Clone().
             Image<Bgr, byte> wavyImage = sourceImage.Clone();
 
             double waveAmplitude = WaveAmplitude.Value;
@@ -265,12 +307,12 @@ namespace aoci_lab3
             {
                 for (int x_out = 0; x_out < wavyImage.Width; x_out++)
                 {
-                    double x_in = x_out;
-                    double y_in = y_out;
+                    //Горизонтальное смещение (offsetX) зависит от вертикальной координаты (y_out) и синусоиды, что и создает эффект волны.
+                    double offsetX = waveAmplitude * Math.Sin(y_out * waveFrequency);
 
-                    double offsetX = waveAmplitude * Math.Sin(y_in * waveFrequency);
-
-                    x_in += offsetX;
+                    //Вычисляем исходную координату x_in, смещая ее на offsetX.
+                    double x_in = x_out + offsetX;
+                    double y_in = y_out; //Координата y не меняется
 
                     if (x_in >= 0 && y_in >= 0 && x_in < sourceImage.Width - 1 && y_in < sourceImage.Height - 1)
                     {
@@ -282,6 +324,7 @@ namespace aoci_lab3
             MainImage.Source = ToBitmapSource(wavyImage);
         }
 
+        //Функция применяет к изображению эффект закручивания вокруг центра.
         private void OnTwirlFilterChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
             if (sourceImage == null) return;
@@ -292,40 +335,45 @@ namespace aoci_lab3
 
             if (Math.Abs(twirlStrength) > 0.01)
             {
+                float centerX = sourceImage.Width / 2.0f;
+                float centerY = sourceImage.Height / 2.0f;
+
+                //Максимальный радиус, в пределах которого будет действовать эффект.
+                double twirlRadius = Math.Min(centerX, centerY);
+
                 for (int y_out = 0; y_out < twirlImage.Height; y_out++)
                 {
                     for (int x_out = 0; x_out < twirlImage.Width; x_out++)
                     {
-                        double x_in = x_out;
-                        double y_in = y_out;
-
-                        float centerX = sourceImage.Width / 2.0f;
-                        float centerY = sourceImage.Height / 2.0f;
-
+                        //Переходим от обычных координат к координатам относительно центра.
                         double dx = x_out - centerX;
                         double dy = y_out - centerY;
+
+                        //Конвертируем декартовы координаты (dx, dy) в полярные (distance, angle).
                         double distance = Math.Sqrt(dx * dx + dy * dy);
-                        double angle = Math.Atan2(dy, dx);
+                        double angle = Math.Atan2(dy, dx); // Угол
 
-                        double twirlRadius = Math.Min(centerX, centerY);
-
+                        //Эффект применяется только внутри заданного радиуса.
                         if (distance < twirlRadius)
                         {
+                            //Модифицируем угол. Сила смещения (factor) зависит от расстояния до центра:
+                            //в центре она максимальна (1.0), на краю радиуса - нулевая (0.0).
                             double factor = 1.0 - (distance / twirlRadius);
-                            angle += twirlStrength * factor;
+                            angle += twirlStrength * factor; //Смещаем угол
 
-                            x_in = centerX + distance * Math.Cos(angle);
-                            y_in = centerY + distance * Math.Sin(angle);
+                            //Конвертируем обратно в декартовы координаты, чтобы найти x_in, y_in.
+                            double x_in = centerX + distance * Math.Cos(angle);
+                            double y_in = centerY + distance * Math.Sin(angle);
+
+                            if (x_in >= 0 && y_in >= 0 && x_in < sourceImage.Width - 1 && y_in < sourceImage.Height - 1)
+                            {
+                                twirlImage[y_out, x_out] = BilinearInterpolate(sourceImage, (float)x_in, (float)y_in);
+                            }
                         }
                         else
                         {
-                            x_in = x_out;
-                            y_in = y_out;
-                        }
-
-                        if (x_in >= 0 && y_in >= 0 && x_in < sourceImage.Width - 1 && y_in < sourceImage.Height - 1)
-                        {
-                            twirlImage[y_out, x_out] = sourceImage[(int)Math.Truncate(y_in), (int)Math.Truncate(x_in)];
+                            //Если пиксель за пределами радиуса, просто копируем его цвет.
+                            twirlImage[y_out, x_out] = sourceImage[y_out, x_out];
                         }
                     }
                 }
