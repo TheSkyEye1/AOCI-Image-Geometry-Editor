@@ -162,6 +162,8 @@ namespace aoci_lab3
             float centerX = sourceImage.Width / 2.0f;
             float centerY = sourceImage.Height / 2.0f;
 
+            double shear = ShearSlider.Value;
+
             int newWidth = (int)(sourceImage.Width * scaleX);
             int newHeight = (int)(sourceImage.Height * scaleY);
 
@@ -177,12 +179,15 @@ namespace aoci_lab3
                     double x_rotated = x_centered * cos + y_centered * sin;
                     double y_rotated = -x_centered * sin + y_centered * cos;
 
-                    double x_scaled = x_rotated / scaleX;
-                    double y_scaled = y_rotated / scaleY;
+                    double x_sheared = x_rotated - y_rotated * shear;
+                    double y_sheared = y_rotated;
+
+                    double x_scaled = x_sheared / scaleX;
+                    double y_scaled = y_sheared / scaleY;
 
                     double x_in = x_scaled + centerX;
                     double y_in = y_scaled + centerY;
-                        
+
                     if (x_in >= 0 && y_in >= 0 && x_in < sourceImage.Width && y_in < sourceImage.Height)
                     {
                         scaledImage[y_out, x_out] = sourceImage[(int)Math.Truncate(y_in), (int)Math.Truncate(x_in)];
