@@ -50,6 +50,14 @@
                         <Slider Minimum="-1.0" Maximum="1.0" Value="0" Name="ShearSlider" ValueChanged="OnInversedGeometryFilterChanged"/>
 
                         <CheckBox Name="InterpolationCheckbox" Content="Билинейная интерполяция" Margin="0,10,0,10" Checked="OnInversedGeometryFilterChanged" Unchecked="OnInversedGeometryFilterChanged"/>
+
+                        <Label Content="Центр поворота" HorizontalContentAlignment="Center"/>
+                        <StackPanel Orientation="Horizontal" Margin="5">
+                            <Label Content="X:"/>
+                            <TextBox x:Name="xCord" Text="-1" VerticalAlignment="Center" HorizontalAlignment="Center" Width="40" Height="20" Margin="0,0,20,0"/>
+                            <Label Content="Y:"/>
+                            <TextBox x:Name="yCord" Text="-1" VerticalAlignment="Center" HorizontalAlignment="Center" Width="40" Height="20"/>
+                        </StackPanel>
                     </StackPanel>
                 </Border>
 

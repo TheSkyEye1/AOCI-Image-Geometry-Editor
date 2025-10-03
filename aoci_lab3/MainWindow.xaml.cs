@@ -190,8 +190,17 @@ namespace aoci_lab3
             double angleRadians = angleDegrees * Math.PI / 180.0;
             double cos = Math.Cos(angleRadians);
             double sin = Math.Sin(angleRadians);
-            float centerX = sourceImage.Width / 2.0f;
-            float centerY = sourceImage.Height / 2.0f;
+
+            float centerX, centerY = 0;
+
+            if(float.TryParse(xCord.Text,out centerX) && float.TryParse(yCord.Text,out centerY))
+            {
+                if(centerX < 0 || centerY < 0)
+                {
+                    centerX = sourceImage.Width / 2.0f;
+                    centerY = sourceImage.Height / 2.0f;
+                }
+            }
 
             double shear = ShearSlider.Value;
 
@@ -240,6 +249,11 @@ namespace aoci_lab3
             }
 
             MainImage.Source = ToBitmapSource(scaledImage);
+        }
+
+        private void MainImage_MouseLeftButtonDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        {
+
         }
     }
 }
