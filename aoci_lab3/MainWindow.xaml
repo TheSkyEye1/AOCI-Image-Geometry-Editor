@@ -5,13 +5,12 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:aoci_lab3"
         mc:Ignorable="d"
-        Title="Лабораторная работа #3" Height="600" Width="1000">
+        Title="Лабораторная работа #3" Height="500" Width="800">
     <Grid>
         
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="200"/>
             <ColumnDefinition Width="*"/>
-            <ColumnDefinition Width="200"/>
         </Grid.ColumnDefinitions>
 
         <Border Grid.Row="1" Grid.Column="0" BorderBrush="DimGray" BorderThickness="1" Margin="5">
@@ -21,6 +20,20 @@
                 <Button Content="Сохранить изображение" Click="SaveImage_Click" Margin="0,0,0,20" FontWeight="Bold"/>
                 <Button Content="Применить изменения" Click="UpdateImage_Click" Margin="0,0,0,5"/>
                 <Button Content="Сбросить" Click="Clear_Click" Margin="0,0,0,20"/>
+
+
+                <Label Content="Масштаб X"/>
+                <Slider Minimum="0.1" Maximum="3.0" Value="1.0" Name="ScaleXSlider" ValueChanged="OnGeometryFilterChanged"/>
+
+                <Label Content="Масштаб Y"/>
+                <Slider Minimum="0.1" Maximum="3.0" Value="1.0" Name="ScaleYSlider" ValueChanged="OnGeometryFilterChanged"/>
+
+                <Label Content="Угол поворота"/>
+                <Slider Minimum="-180" Maximum="180" Value="0" Name="RotationSlider" ValueChanged="OnGeometryFilterChanged"/>
+
+                <Label Content="Сдвиг (Shear)"/>
+                <Slider Minimum="-1.0" Maximum="1.0" Value="0" Name="ShearSlider" ValueChanged="OnGeometryFilterChanged"/>
+
 
             </StackPanel>
         </Border>
