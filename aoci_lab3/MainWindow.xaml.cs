@@ -7,12 +7,10 @@ using Emgu.CV.Structure;
 using Emgu.CV;
 using static Emgu.Util.Platform;
 using System.Drawing;
+using System.Security.Cryptography.Xml;
 
 namespace aoci_lab3
 {
-    /// <summary>
-    /// Interaction logic for MainWindow.xaml
-    /// </summary>
     public partial class MainWindow : Window
     {
         // --- Код повторяется из лабораторной работы #1 ---
@@ -124,41 +122,135 @@ namespace aoci_lab3
 
         // --- Фильтры и эффекты ---
 
-
-
         // Алгоритм выполняет масштабирование изображения, используя прямое преобразование.
-        private void OnGeometryFilterChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+        private void OnGeometryFilterChanged(object sender, RoutedEventArgs e)
         {
             if (sourceImage == null) return;
 
-            double scaleX = ScaleXSlider.Value;
-            double scaleY = ScaleYSlider.Value;
+            int translateX = (int)BasicTranslateSliderX.Value;
+            int translateY = (int)BasicTranslateSliderY.Value;
+            double scaleX = BasicScaleSliderX.Value;
+            double scaleY = BasicScaleSliderY.Value;
+            double angleDegrees = BasicRotationSlider.Value * Math.PI / 180.0;
+            double skewXRad = BasicShearSliderX.Value * Math.PI / 180.0;
+            double skewYRad = BasicShearSliderY.Value * Math.PI / 180.0;
 
-            //Вычисляем новые размеры изображения.
+            double centerX = sourceImage.Width / 2;
+            double centerY = sourceImage.Height / 2;
+
             int newWidth = (int)(sourceImage.Width * scaleX);
             int newHeight = (int)(sourceImage.Height * scaleY);
 
             Image<Bgr, byte> scaledImage = new Image<Bgr, byte>(newWidth, newHeight);
 
-            //Проходим по ИСХОДНОМУ изображению.
+            int brushWidth = (int)Math.Ceiling(scaleX) + 1;
+            if (brushWidth < 1) brushWidth = 1;
+            // Иногда добавляют +1 для перестраховки от дыр при вращении:
+            // int brushWidth = (int)Math.Ceiling(scaleX) + 1; 
+
+            int brushHeight = (int)Math.Ceiling(scaleY);
+            if (brushHeight < 1) brushHeight = 1;
+
+            // Оптимизация тригонометрии
+            double cosTheta = Math.Cos(angleDegrees);
+            double sinTheta = Math.Sin(angleDegrees);
+
             for (int y_in = 0; y_in < sourceImage.Height; y_in++)
             {
                 for (int x_in = 0; x_in < sourceImage.Width; x_in++)
                 {
-                    //Вычисляем новую позицию для текущего пикселя.
-                    int x_out = (int)(x_in * scaleX);
-                    int y_out = (int)(y_in * scaleY);
+                    double x1 = x_in + translateX;
+                    double y1 = y_in + translateY;
 
-                    //Проверяем, не вышли ли мы за границы нового изображения.
-                    if (x_out >= 0 && x_out < newWidth && y_out >= 0 && y_out < newHeight)
+                    double x2 = x1 * scaleX;
+                    double y2 = y1 * scaleY;
+
+                    double x3 = x2 + y2 * skewXRad;
+                    double y3 = y2 + x2 * skewYRad;
+
+                    double x4 = x3 - centerX;
+                    double y4 = y3 - centerY;
+
+                    double x5 = (int)(x4 * Math.Cos(angleDegrees) - y4 * Math.Sin(angleDegrees));
+                    double y5 = (int)(x4 * Math.Sin(angleDegrees) + y4 * Math.Cos(angleDegrees));
+
+                    int x_out = (int)(x5 + centerX);
+                    int y_out = (int)(y5 + centerY);
+
+                    // Получаем цвет исходного пикселя
+                    Bgr color = sourceImage[y_in, x_in];
+
+                    // === ЗАПОЛНЕНИЕ ДЫР (Splatting) ===
+                    // Рисуем прямоугольник вместо одной точки
+                    for (int j = 0; j < brushHeight; j++)
                     {
-                        //Копируем пиксель из старого изображения в новое.
-                        scaledImage[y_out, x_out] = sourceImage[y_in, x_in];
+                        for (int i = 0; i < brushWidth; i++)
+                        {
+                            int currentX = x_out + i;
+                            int currentY = y_out + j;
+
+                            // Проверка границ для каждого под-пикселя
+                            if (currentX >= 0 && currentX < newWidth &&
+                                currentY >= 0 && currentY < newHeight)
+                            {
+                                scaledImage[currentY, currentX] = color;
+                            }
+                        }
                     }
                 }
             }
 
             MainImage.Source = ToBitmapSource(scaledImage);
+
+
+            //for (int y_in = 0; y_in < sourceImage.Height; y_in++)
+            //{
+            //    for (int x_in = 0; x_in < sourceImage.Width; x_in++)
+            //    {
+            //        double x1 = x_in + translateX;
+            //        double y1 = y_in + translateY;
+
+            //        double x2 = x1 * scaleX;
+            //        double y2 = y1 * scaleY;
+
+            //        double x3 = x2 +  y2 * skewXRad;
+            //        double y3 = y2 + x2 * skewYRad;
+
+            //        double x4 = x3 - centerX;
+            //        double y4 = y3 - centerY;
+
+            //        double x5 = (int)(x4 * Math.Cos(angleDegrees) - y4 * Math.Sin(angleDegrees));
+            //        double y5 = (int)(x4 * Math.Sin(angleDegrees) + y4 * Math.Cos(angleDegrees));
+
+            //        int x_out = (int)(x5 + centerX);
+            //        int y_out = (int)(y5 + centerY);
+
+            //        //if (x_out >= 0 && x_out < newWidth && y_out >= 0 && y_out < newHeight)
+            //        //{
+            //        //    scaledImage[y_out, x_out] = sourceImage[y_in, x_in];
+            //        //}
+
+            //        if (x_out >= 0 && x_out < newWidth && y_out >= 0 && y_out < newHeight)
+            //        {
+            //            Bgr color;
+
+            //            if (InterpolationCheckbox.IsChecked == true)
+            //            {
+            //                //Используем билинейную интерполяцию для гладкости.
+            //                color = BilinearInterpolate(sourceImage, x_in, y_in);
+            //            }
+            //            else
+            //            {
+            //                // Простой вариант - берем цвет ближайшего пикселя.
+            //                color = sourceImage[y_in,x_in];
+            //            }
+
+            //            scaledImage[y_out, x_out] = color;
+            //        }
+            //    }
+            //}
+
+            //MainImage.Source = ToBitmapSource(scaledImage);
         }
 
         //Функция вычисляет цвет для пикселя с дробными координатами с помощью билинейной интерполяции
@@ -169,39 +261,43 @@ namespace aoci_lab3
         //Результат - цвет нашего нового пикселя
         private Bgr BilinearInterpolate(Image<Bgr, byte> image, float x, float y)
         {
-            //Находим координаты 4-х опорных пикселей (квадрат, в который попала точка).
-            int x1 = (int)x;
-            int y1 = (int)y;
-            int x2 = x1 + 1;
-            int y2 = y1 + 1;
+            if (x > 0 && y > 0 && x < image.Width-1 && y < image.Height-1)
+            {
+                //Находим координаты 4-х опорных пикселей (квадрат, в который попала точка).
+                int x1 = (int)x;
+                int y1 = (int)y;
+                int x2 = x1 + 1;
+                int y2 = y1 + 1;
 
-            //Получаем цвета этих пикселей.
-            Bgr p11 = image[y1, x1];  //Верхний левый
-            Bgr p12 = image[y2, x1];  //Нижний левый
-            Bgr p21 = image[y1, x2];  //Верхний правый
-            Bgr p22 = image[y2, x2];  //Нижний правый
+                //Получаем цвета этих пикселей.
+                Bgr p11 = image[y1, x1];  //Верхний левый
+                Bgr p12 = image[y2, x1];  //Нижний левый
+                Bgr p21 = image[y1, x2];  //Верхний правый
+                Bgr p22 = image[y2, x2];  //Нижний правый
 
-            //Вычисляем дробные части — "расстояние" от левой (fx) и верхней (fy) границы.
-            float fx = x - x1;
-            float fy = y - y1;
+                //Вычисляем дробные части — "расстояние" от левой (fx) и верхней (fy) границы.
+                float fx = x - x1;
+                float fy = y - y1;
 
-            //Линейно интерполируем по горизонтали.
-            //Смешиваем цвета верхней пары пикселей (p11 и p21).
-            double r_top = p11.Red * (1 - fx) + p21.Red * fx;
-            double g_top = p11.Green * (1 - fx) + p21.Green * fx;
-            double b_top = p11.Blue * (1 - fx) + p21.Blue * fx;
+                //Линейно интерполируем по горизонтали.
+                //Смешиваем цвета верхней пары пикселей (p11 и p21).
+                double r_top = p11.Red * (1 - fx) + p21.Red * fx;
+                double g_top = p11.Green * (1 - fx) + p21.Green * fx;
+                double b_top = p11.Blue * (1 - fx) + p21.Blue * fx;
 
-            //Смешиваем цвета нижней пары пикселей (p12 и p22).
-            double r_bottom = p12.Red * (1 - fx) + p22.Red * fx;
-            double g_bottom = p12.Green * (1 - fx) + p22.Green * fx;
-            double b_bottom = p12.Blue * (1 - fx) + p22.Blue * fx;
+                //Смешиваем цвета нижней пары пикселей (p12 и p22).
+                double r_bottom = p12.Red * (1 - fx) + p22.Red * fx;
+                double g_bottom = p12.Green * (1 - fx) + p22.Green * fx;
+                double b_bottom = p12.Blue * (1 - fx) + p22.Blue * fx;
 
-            //Линейно интерполируем по вертикали между двумя полученными "средними" цветами.
-            double r = r_top * (1 - fy) + r_bottom * fy;
-            double g = g_top * (1 - fy) + g_bottom * fy;
-            double b = b_top * (1 - fy) + b_bottom * fy;
+                //Линейно интерполируем по вертикали между двумя полученными "средними" цветами.
+                double r = r_top * (1 - fy) + r_bottom * fy;
+                double g = g_top * (1 - fy) + g_bottom * fy;
+                double b = b_top * (1 - fy) + b_bottom * fy;
 
-            return new Bgr(b, g, r);
+                return new Bgr(b, g, r);
+            }
+            return new Bgr(0, 0, 0);
         }
 
         //Выполняет масштабирование, вращение и сдвиг, используя обратное преобразование.
@@ -226,11 +322,12 @@ namespace aoci_lab3
             double sin = Math.Sin(angleRadians);
 
             //Центр вращения (по умолчанию центр изображения).
-            float centerX = sourceImage.Width / 2.0f;
-            float centerY = sourceImage.Height / 2.0f;
+            float centerX = -1;
+            float centerY = -1;
             float.TryParse(xCord.Text, out centerX); //Пытаемся прочитать из TextBox координаты центра поворота
             float.TryParse(yCord.Text, out centerY);
-
+            if(centerX == -1) centerX = sourceImage.Width / 2.0f;
+            if(centerY == -1) centerY = sourceImage.Height / 2.0f;
 
             //Новые размеры изображения.
             int newWidth = (int)(sourceImage.Width * scaleX);
@@ -381,5 +478,6 @@ namespace aoci_lab3
 
             MainImage.Source = ToBitmapSource(twirlImage);
         }
+
     }
 }
