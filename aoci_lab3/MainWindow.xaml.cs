@@ -5,16 +5,12 @@ using System.Windows.Media.Imaging;
 using Microsoft.Win32;
 using Emgu.CV.Structure;
 using Emgu.CV;
-using static Emgu.Util.Platform;
-using System.Drawing;
-using System.Security.Cryptography.Xml;
+using System.Windows.Documents;
 
 namespace aoci_lab3
 {
     public partial class MainWindow : Window
     {
-        // --- Код повторяется из лабораторной работы #1 ---
-
         private Image<Bgr, byte> sourceImage;
 
         public MainWindow()
@@ -149,7 +145,7 @@ namespace aoci_lab3
             int brushWidth = (int)Math.Ceiling(scaleX) + 1;
             if (brushWidth < 1) brushWidth = 1;
 
-            int brushHeight = (int)Math.Ceiling(scaleY);
+            int brushHeight = (int)Math.Ceiling(scaleY) + 1;
             if (brushHeight < 1) brushHeight = 1;
 
             for (int y_in = 0; y_in < sourceImage.Height; y_in++)
@@ -183,8 +179,8 @@ namespace aoci_lab3
                         {
                             for (int i = 0; i < brushWidth; i++)
                             {
-                                int currentX = x_out + i;
-                                int currentY = y_out + j;
+                                int currentX = (int)x_out + i;
+                                int currentY = (int)y_out + j;
 
                                 if (currentX >= 0 && currentX < newWidth && currentY >= 0 && currentY < newHeight)
                                 {
@@ -197,13 +193,13 @@ namespace aoci_lab3
                     {
                         if (x_out >= 0 && x_out < newWidth && y_out >= 0 && y_out < newHeight)
                         {
-                            scaledImage[y_out, x_out] = color;
+                            scaledImage[(int)y_out, (int)x_out] = color;
                         }
                     }
                 }
             }
 
-            if (GapFilteringCheckBox.IsChecked == true)
+            if (GapFilteringCheckBox.IsChecked == true || GapFilteringModifiedCheckBox.IsChecked == true)
             {
                 for (int y = 1; y < scaledImage.Height - 1; y++)
                 {
@@ -213,16 +209,67 @@ namespace aoci_lab3
                         {
                             Bgr color = new Bgr();
 
-                            Bgr colorU = scaledImage[y - 1, x];
-                            Bgr colorR = scaledImage[y, x + 1];
-                            Bgr colorD = scaledImage[y + 1, x];
-                            Bgr colorL = scaledImage[y, x - 1];
+                            if (GapFilteringCheckBox.IsChecked == true)
+                            {
+                                Bgr colorU = scaledImage[y - 1, x];
+                                Bgr colorR = scaledImage[y, x + 1];
+                                Bgr colorD = scaledImage[y + 1, x];
+                                Bgr colorL = scaledImage[y, x - 1];
 
-                            color.Red = (byte)((colorU.Red + colorR.Red + colorD.Red + colorL.Red) / 4);
-                            color.Green = (byte)((colorU.Green + colorR.Green + colorD.Green + colorL.Green) / 4);
-                            color.Blue = (byte)((colorU.Blue + colorR.Blue + colorD.Blue + colorL.Blue) / 4);
 
-                            scaledImage[y, x] = color;
+                                color.Red = (byte)((colorU.Red + colorR.Red + colorD.Red + colorL.Red) / 4);
+                                color.Green = (byte)((colorU.Green + colorR.Green + colorD.Green + colorL.Green) / 4);
+                                color.Blue = (byte)((colorU.Blue + colorR.Blue + colorD.Blue + colorL.Blue) / 4);
+
+                                scaledImage[y, x] = color;
+                            }
+                            else
+                            {
+                                int counter = 0;
+                                double red = 0;
+                                double blue = 0;
+                                double green = 0;
+
+                                if (scaledImage[y - 1, x].Green != 0 && scaledImage[y - 1, x].Blue != 0 && scaledImage[y - 1, x].Red != 0)
+                                {
+                                    counter++;
+                                    red += scaledImage[y - 1, x].Red;
+                                    green += scaledImage[y - 1, x].Green;
+                                    blue += scaledImage[y - 1, x].Blue;
+                                }
+
+                                if (scaledImage[y, x + 1].Green != 0 && scaledImage[y, x + 1].Blue != 0 && scaledImage[y, x + 1].Red != 0)
+                                {
+                                    counter++;
+                                    red += scaledImage[y, x + 1].Red;
+                                    green += scaledImage[y, x + 1].Green;
+                                    blue += scaledImage[y, x + 1].Blue;
+                                }
+
+                                if (scaledImage[y + 1, x].Green != 0 && scaledImage[y + 1, x].Blue != 0 && scaledImage[y + 1, x].Red != 0)
+                                {
+                                    counter++;
+                                    red += scaledImage[y + 1, x].Red;
+                                    green += scaledImage[y + 1, x].Green;
+                                    blue += scaledImage[y + 1, x].Blue;
+                                }
+
+                                if (scaledImage[y, x - 1].Green != 0 && scaledImage[y, x - 1].Blue != 0 && scaledImage[y, x - 1].Red != 0)
+                                {
+                                    counter++;
+                                    red += scaledImage[y, x - 1].Red;
+                                    green += scaledImage[y, x - 1].Green;
+                                    blue += scaledImage[y, x - 1].Blue;
+                                }
+
+                                if (counter != 0)
+                                {
+                                    color.Red = (byte)(red / counter);
+                                    color.Green = (byte)(green / counter);
+                                    color.Blue = (byte)(blue / counter);
+                                    scaledImage[y, x] = color;
+                                }
+                            }
                         }
                     }
                 }

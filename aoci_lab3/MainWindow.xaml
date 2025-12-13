@@ -49,7 +49,7 @@
 
                         <RadioButton Name="NoFilteringCheckBox" Content="Без фильтрации" Margin="0,10,0,0" Checked="OnGeometryFilterChanged" Unchecked="OnGeometryFilterChanged" GroupName="Group1" IsChecked="True"/>
                         <RadioButton Name="GapFilteringCheckBox" Content="Нахождение среднего" Margin="0,10,0,0" Checked="OnGeometryFilterChanged" Unchecked="OnGeometryFilterChanged" GroupName="Group1"/>
-                        <RadioButton Name="BrushSizeCheckBox" Content="Расширение кисти" Margin="0,10,0,20" Checked="OnGeometryFilterChanged" Unchecked="OnGeometryFilterChanged" GroupName="Group1"/>
+                        <RadioButton Name="BrushSizeCheckBox" Content="Расширение кисти" Margin="0,10,0,10" Checked="OnGeometryFilterChanged" Unchecked="OnGeometryFilterChanged" GroupName="Group1"/>
                     </StackPanel>
                 </Border>
 
